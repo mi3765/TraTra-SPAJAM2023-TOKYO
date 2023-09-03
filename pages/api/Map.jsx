@@ -48,5 +48,5 @@ const Map = () => {
       </div> */}
     </div>
   );
-    }
+    };
 export default Map;
