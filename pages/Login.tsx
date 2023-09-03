@@ -1,35 +1,32 @@
 'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/router'; // 1. useRouterをインポート
-import supabase from '@/lib/supabase';
+'use client'
+import React, { useState } from 'react';
+import { useRouter } from 'next/router';  // Next.jsのrouterをインポートします。
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { app } from "@/firebase/firebase";
 
 export const Login = () => {
-    const router = useRouter(); // 1. useRouterのインスタンスを作成
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false); // 2. loadingステートを追加
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();  // routerを初期化します。
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true); // 2. リクエスト開始時にloadingをtrueに設定
-
-        const { error, data } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-
-        if (error) {
-            setError(error.message);
-            setLoading(false); // エラーが発生した場合、loadingをfalseに設定
-            return;
-        }
-
-        if (data) {
-            router.push('/'); // 3. Loginが成功したらルートページにリダイレクト
+        setLoading(true);
+    
+        const auth = getAuth(app);
+    
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            router.push('/');  // ユーザーをホームページにリダイレクトします。
+        } catch (firebaseError) {
+            setLoading(false);
         }
     };
+    
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

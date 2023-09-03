@@ -1,9 +1,13 @@
 'use client'
 
-import { useState } from 'react';
-import supabase from '@/lib/supabase';
+import React, { useState } from 'react';
+import { doc, setDoc } from "firebase/firestore";
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { app, db } from "@/firebase/firebase";
+import { useRouter } from 'next/router';
 
 export const Signup = () => {
+    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
@@ -15,37 +19,23 @@ export const Signup = () => {
         e.preventDefault();
         setLoading(true);
 
-        const { data, error } = await supabase.auth.signUp({
-            email: email,
-            password: password,
-        });
+        const auth = getAuth(app);
 
-        if (error) {
-            setError(error.message);
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Store additional user data in Firestore
+            await setDoc(doc(db, "users", user.uid), {
+                email: email,
+                user_name: username,
+                created_at: new Date(),
+                updated_at: new Date()
+            });
+
+            router.push('/');  // ユーザーをホームページにリダイレクトします。
+        } catch (firebaseError) {
             setLoading(false);
-            return;
-        }
-
-        if (data && data.user) {
-            const { data: insertData, error: insertError } = await supabase
-                .from('users')
-                .insert([
-                    {
-                        id: data.user.id,
-                        email: email,
-                        user_name: username,
-                        created_at: new Date(),
-                        updated_at: new Date()
-                    }
-                ]);
-
-            if (insertError) {
-                setError(insertError.message);
-                setLoading(false);
-                return;
-            }
-
-            setSignupSuccess(true);
         }
     };
 
